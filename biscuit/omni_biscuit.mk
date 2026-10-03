@@ -9,3 +9,5 @@ $(call inherit-product, device/amazon/mt8163-echo/echo.mk)
 PRODUCT_DEVICE := biscuit
 PRODUCT_NAME := omni_biscuit
 PRODUCT_MODEL := Echo Dot (2nd Gen)
+
+PRODUCT_PROPERTY_OVERRIDES += ro.twrp.source=https://github.com/bboe/twrp_device_amazon_echo-mt8163

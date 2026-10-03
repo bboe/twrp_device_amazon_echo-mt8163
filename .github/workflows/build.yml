@@ -1,0 +1,60 @@
+name: Build
+
+on:
+  push:
+    branches: [biscuit-v1]
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 300
+    permissions:
+      attestations: write
+      contents: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Verify the kernel's attestation
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release download v0.1 --repo bboe/android_kernel_amazon_biscuit --pattern Image.gz-dtb --dir "$RUNNER_TEMP"
+          gh attestation verify "$RUNNER_TEMP/Image.gz-dtb" --repo bboe/android_kernel_amazon_biscuit
+
+      - name: Build
+        run: |
+          sudo mkdir -p /mnt/twrp
+          docker run --rm --hostname github -v "$PWD:/tree" -v /mnt/twrp:/work ubuntu:20.04 /tree/.github/container.sh
+          sudo chown -R "$USER" dist
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: recovery
+          path: |
+            dist/recovery.img
+            dist/manifest.xml
+          if-no-files-found: error
+
+      - if: github.event_name != 'pull_request'
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: dist/recovery.img
+
+      - if: startsWith(github.ref, 'refs/tags/')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version=$(sed -n 's/^TW_DEVICE_VERSION := //p' biscuit/BoardConfig.mk)
+          case "$GITHUB_REF_NAME" in
+            *-"$version") ;;
+            *) echo "tag $GITHUB_REF_NAME does not end in -$version" >&2; exit 1 ;;
+          esac
+          cp dist/recovery.img "dist/twrp-$GITHUB_REF_NAME-biscuit.img"
+          gh release create "$GITHUB_REF_NAME" "dist/twrp-$GITHUB_REF_NAME-biscuit.img" dist/manifest.xml --draft --generate-notes --verify-tag
