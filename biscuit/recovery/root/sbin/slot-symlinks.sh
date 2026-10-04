@@ -26,6 +26,12 @@ done
 ln -sf "$(readlink -f ${BYNAME}/boot${SLOT})"   /dev/block/current-boot
 ln -sf "$(readlink -f ${BYNAME}/system${SLOT})" /dev/block/current-system
 
+# v1.1.0's TWRP points Fire OS's OTA targets at the current slot, and its
+# lk at /dev/null so an OTA cannot replace amonet's.
+ln -sf "$(readlink -f ${BYNAME}/boot${SLOT})"   /dev/block/other-boot
+ln -sf "$(readlink -f ${BYNAME}/system${SLOT})" /dev/block/other-system
+ln -sf /dev/null /dev/block/other-lk
+
 DECOYS="lk_a:1048576 lk_b:1048576 tee1:5242880 tee2:5242880 tee:5242880 preloader:4194304"
 
 mkdir -p ${SCRATCH}

@@ -27,6 +27,8 @@ update_slot() {
         rm -f /dev/block/current-system /dev/block/current-boot > /dev/null 2>&1
         ln -s "$(readlink -f ${BYNAME}/system${slot_suffix})" /dev/block/current-system > /dev/null 2>&1
         ln -s "$(readlink -f ${BYNAME}/boot${slot_suffix})" /dev/block/current-boot > /dev/null 2>&1
+        ln -sf "$(readlink -f ${BYNAME}/system${slot_suffix})" /dev/block/other-system
+        ln -sf "$(readlink -f ${BYNAME}/boot${slot_suffix})" /dev/block/other-boot
     fi
 }
 
